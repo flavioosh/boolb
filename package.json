@@ -1,0 +1,22 @@
+{
+    "name": "boolb",
+    "productName": "Boolb",
+    "version": "0.1.0",
+    "description": "A tiny WeMo bulb controlling tray icon.",
+    "main": "index.js",
+    "author": "flavioosh",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/flavioosh/boolb.git"
+    },
+    "scripts": {
+        "start": "./node_modules/.bin/electron ."
+    },
+    "devDependencies": {
+        "electron": "^1.6.6"
+    },
+    "dependencies": {
+        "wemo-client": "^0.12.0"
+    }
+}
