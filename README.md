@@ -1,6 +1,6 @@
 # Boolb
 
-A tiny WeMo bulb controlling tray icon.
+A tiny WeMo switch controlling tray icon.
 
 ## Running
 
