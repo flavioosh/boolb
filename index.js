@@ -3,60 +3,67 @@ const {app, Menu, Tray} = require('electron');
 const Wemo = require('wemo-client');
 var wemo = new Wemo();
 
-var devices = [];
+let tray;
+var contextMenu;
+
+let selectedDevice = 0;
+let devices = [];
 
 const search = function() {
     console.log('Searching for devices...');
+
     wemo.discover(function(device) {
-        console.log('Device "' + device.friendlyName + '" found.');
+        console.log('Device "%s" found.', device.friendlyName);
+        
         var client = wemo.client(device);
         client.on('binaryState', function(value) {
             for (var i = 0; i < devices.length; i++) {
                 if (devices[i].device === this.device) {
-                    console.log('State of device "' + this.device.friendlyName + '" changed to ' + value + '.');
-                    tray.setImage('icons/icon-' + (value == 1 ? 'on' : 'off') + '.png')
+                    console.log('State of device "%s" changed to %s.', this.device.friendlyName, value);
+                    setIcon(value == 1 ? 'on' : 'off');
                     devices[i].state = value;
+                    updateMenu();
                 }
             }
-            updateMenu();
         });
+
         devices.push({
             device: device,
             client: client,
             state: device.binaryState
         });
+
         updateMenu();
     });
 }
 
 const menuOptions = [
-    {label: 'Search', click: search},
     {type: 'separator'},
-    {label: 'Quit', click: app.quit}
+    {label: 'Search', click: search},
+    {label: 'Quit', role: 'quit'}
 ];
 
 const updateMenu = function() {
     var deviceMenuItems = [];
     if(devices.length > 0) {
+        deviceMenuItems.push({label: 'Devices:', enabled: false});
         for(var i = 0; i < devices.length; i++) {
-            var device = devices[0]
+            var currentDevice = i;
             deviceMenuItems.push({
-                label: device.device.friendlyName,
-                type: 'checkbox',
-                checked: device.state == 1,
-                click: toggleSwitch(device)
+                label: devices[i].device.friendlyName + ' (' + (devices[i].state == 1 ? 'On' : 'Off') + ')',
+                type: 'radio',
+                checked: selectedDevice === i ? true : false,
+                click: () => {selectedDevice = currentDevice}
             });
         }
-    }else {
+    } else {
         deviceMenuItems.push({label: 'No devices found.', enabled: false});
     }
+
     contextMenu = Menu.buildFromTemplate(deviceMenuItems.concat(menuOptions));
 
     tray.setContextMenu(contextMenu);
 }
-
-let tray = null;
-var contextMenu = null;
 
 app.on('ready', () => {
     tray = new Tray('icons/icon-off.png');
@@ -64,7 +71,7 @@ app.on('ready', () => {
 
     tray.on('click', (event) => {
         if(devices.length > 0) {
-            toggleSwitch(devices[0])();
+            toggleDevice();
         }
     });
 
@@ -73,10 +80,15 @@ app.on('ready', () => {
     search();
 });
 
-const toggleSwitch = function(device) {
-    return function() {
-        console.log('Toggling "' + device.device.friendlyName + '".');
-        console.log('Setting state to ' + (device.state == 1 ? 'off' : 'on') + '.');
-        device.client.setBinaryState(device.state == 1 ? 0 : 1);
-    }
+const setIcon = function(state) {
+    tray.setImage('icons/icon-' + state + '.png');
+}
+
+const toggleDevice = function() {
+    var device = devices[selectedDevice];
+
+    console.log('Toggling device "%s".', device.device.friendlyName);
+    console.log('Setting state to %s.', device.state == 1 ? 'off' : 'on');
+
+    device.client.setBinaryState(device.state == 1 ? 0 : 1);
 }
